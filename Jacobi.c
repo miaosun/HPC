@@ -7,6 +7,8 @@
 
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 #define PI 3.14159265
 
 #define max 20                         /* number of grid points */
@@ -21,10 +23,10 @@ double average(double p[max][max])
 	return res/(max*max);
 }
 
-main()
+int main()
 {
-	double x, p[max][max];
-	int i, j, iter, y;
+	double p[max][max];
+	int i, j, iter;
 
 	FILE *output;			/* save data in laplace.dat */
 	output = fopen("laplace.dat","w");
