@@ -23,6 +23,26 @@ double average(double p[max][max])
 	return res/(max*max);
 }
 
+double rms_norm (double a[max][max] )
+{
+	int i;
+	int j;
+	double v;
+
+	v = 0.0;
+
+	for ( j = 0; j < max; j++ )
+	{
+		for ( i = 0; i < max; i++ )
+		{
+			v = v + a[i][j] * a[i][j];
+		}
+	}
+	v = sqrt ( v / ( double ) ( max * max )  );
+
+	return v;
+}
+
 int main()
 {
 	double p[max][max];
@@ -59,7 +79,7 @@ int main()
 				printf("%.2f\t", p[i][j]);
 			printf("\n");
 		}
-		avg = average(p);
+		avg = rms_norm(p);
 
 		if(avg-old_avg < 0.00000001)
 		{
