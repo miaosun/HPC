@@ -11,7 +11,7 @@
 #include <math.h>
 #define PI 3.14159265
 
-#define max 20                         /* number of grid points */
+#define max 50                         /* number of grid points */
 #define TELERANCE 0.00000001
 
 double average(double p[max][max])
