@@ -106,21 +106,12 @@ double jacobi_parallel(double **p, int rank, int n_proc, int ite)
 
 	count = n;
 
-	/*
-	rcvBuf = (double *) malloc(count*sizeof(double));
-
-
-	rcvBuf1 = (double *) malloc(count*sizeof(double));
-	rcvBuf2 = (double *) malloc(count*sizeof(double));
-	rcvBuf3 = (double *) malloc(count*sizeof(double));
-	 */
 	int downtag = 1;
 	int uptag = 2;
 
-
 	if(rank == 0)
-	{
-		/*for(i = 1; i<=s_index; i++)
+	{/*
+		for(i = 1; i<=s_index; i++)
 		{
 			for(j=1; j<n-1; j++)
 			{
@@ -141,12 +132,12 @@ double jacobi_parallel(double **p, int rank, int n_proc, int ite)
 
 		//MPI_Recv(rcvBuf, count, MPI_DOUBLE, 1, uptag, MPI_COMM_WORLD, &status);
 //		MPI_Recv(&p[s_index+1][0], count, MPI_DOUBLE, 1, uptag, MPI_COMM_WORLD, &status);
-		MPI_Sendrecv(&p[s_index][0], count, MPI_DOUBLE, 1, downtag, &p[s_index+1][0], count, MPI_DOUBLE, 1, uptag, MPI_COMM_WORLD, &status);
+//		MPI_Sendrecv(&p[s_index][0], count, MPI_DOUBLE, 1, downtag, &p[s_index+1][0], count, MPI_DOUBLE, 1, uptag, MPI_COMM_WORLD, &status);
 
 	}
 	else if(rank == n_proc-1)
-	{
-		/*for(i = rank*(s_index)+1; i<=rank*(s_index)+s_index; i++)
+	{/*
+		for(i = rank*(s_index)+1; i<=rank*(s_index)+s_index; i++)
 		{
 			for(j=1; j<n-1; j++)
 			{
@@ -166,12 +157,11 @@ double jacobi_parallel(double **p, int rank, int n_proc, int ite)
 
 		//MPI_Recv(rcvBuf3, count, MPI_DOUBLE, rank-1, downtag, MPI_COMM_WORLD, &status);
 //		MPI_Recv(&p[n-n_grid][0], count, MPI_DOUBLE, rank-1, downtag, MPI_COMM_WORLD, &status);
-		MPI_Sendrecv(&p[n-s_index-1][0], count, MPI_DOUBLE, rank-1, uptag, &p[n-n_grid][0], count, MPI_DOUBLE, rank-1, downtag, MPI_COMM_WORLD, &status);
+//		MPI_Sendrecv(&p[n-s_index-1][0], count, MPI_DOUBLE, rank-1, uptag, &p[n-n_grid][0], count, MPI_DOUBLE, rank-1, downtag, MPI_COMM_WORLD, &status);
 
 	}
 	else
 	{
-
 		sendBuf1 = (double *) malloc(count*sizeof(double));
 		sendBuf2 = (double *) malloc(count*sizeof(double));
 		for(j=0; j<n; j++)
@@ -179,14 +169,14 @@ double jacobi_parallel(double **p, int rank, int n_proc, int ite)
 			sendBuf1[j] = p[rank*s_index+1][j];
 			//MPI_Sendrecv(sendBuf1, count, MPI_DOUBLE, rank-1, 1, rcvBuf1, count, MPI_DOUBLE, rank-1, 1, MPI_COMM_WORLD, &status);
 			//MPI_Send(sendBuf1, count, MPI_DOUBLE, rank-1, uptag, MPI_COMM_WORLD);
-			free(sendBuf1);
+			//free(sendBuf1);
 	//		MPI_Send(&p[rank*s_index+1][0], count, MPI_DOUBLE, rank-1, uptag, MPI_COMM_WORLD);
 
 
 			//MPI_Recv(rcvBuf1, count, MPI_DOUBLE, rank-1, 1, MPI_COMM_WORLD, &status);
 	//		MPI_Recv(&p[rank*s_index][0], count, MPI_DOUBLE, rank-1, downtag, MPI_COMM_WORLD, &status);
 
-			MPI_Sendrecv(&p[rank*s_index+1][0], count, MPI_DOUBLE, rank-1, uptag, &p[rank*s_index][0], count, MPI_DOUBLE, rank-1, downtag, MPI_COMM_WORLD, &status);
+//			MPI_Sendrecv(&p[rank*s_index+1][0], count, MPI_DOUBLE, rank-1, uptag, &p[rank*s_index][0], count, MPI_DOUBLE, rank-1, downtag, MPI_COMM_WORLD, &status);
 
 			sendBuf2[j] = p[rank*s_index+s_index][j];
 			//MPI_Sendrecv(sendBuf2, count, MPI_DOUBLE, rank+1, 1, rcvBuf2, count, MPI_DOUBLE, rank+1, 1, MPI_COMM_WORLD, &status);
@@ -196,7 +186,7 @@ double jacobi_parallel(double **p, int rank, int n_proc, int ite)
 
 			//MPI_Recv(rcvBuf2, count, MPI_DOUBLE, rank-1, 1, MPI_COMM_WORLD, &status);
 	//		MPI_Recv(&p[rank*s_index+s_index+1][0], count, MPI_DOUBLE, rank-1, uptag, MPI_COMM_WORLD, &status);
-			MPI_Sendrecv(&p[rank*s_index+s_index][0], count, MPI_DOUBLE, rank+1, downtag, &p[rank*s_index+s_index+1][0], count, MPI_DOUBLE, rank+1, uptag, MPI_COMM_WORLD, &status);
+//			MPI_Sendrecv(&p[rank*s_index+s_index][0], count, MPI_DOUBLE, rank+1, downtag, &p[rank*s_index+s_index+1][0], count, MPI_DOUBLE, rank+1, uptag, MPI_COMM_WORLD, &status);
 
 		}
 	}
