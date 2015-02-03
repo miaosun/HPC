@@ -162,6 +162,7 @@ double jacobi_parallel(double **p, int rank, int n_proc, int ite)
 	int downtag = 1;
 	int uptag = 2;
 
+
 	if(rank == 0)
 	{
 		sendBuf = (double *) malloc(count*sizeof(double));
