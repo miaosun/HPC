@@ -12,6 +12,7 @@
 #define PI 3.14159265
 
 #define max 20                         /* number of grid points */
+#define TELERANCE 0.00000001
 
 double average(double p[max][max])
 {
@@ -58,7 +59,9 @@ int main()
 	}
 
 	for(i=1; i<max-1; i++)
-		p[i][0] = sin(PI*1/i) * sin(PI*1/i);
+	{
+		p[i][0] = sin(PI*i/max) * sin(PI*i/max);
+	}
 
 	double old_avg = 0.0;
 	double avg = 0.0;
@@ -81,7 +84,7 @@ int main()
 		}
 		avg = rms_norm(p);
 
-		if(avg-old_avg < 0.00000001)
+		if(fabs(avg-old_avg) < TELERANCE)
 		{
 			printf("\nConverged after %d iterations\n", iter);
 			exit(0);
@@ -89,9 +92,9 @@ int main()
 		printf("\n");
 	}
 
-	for (i=0; i<max ; i++)         /* write data gnuplot 3D format */
+	for (i=max-1; i>=0 ; i--)         /* write data gnuplot 3D format */
 	{
-		for (j=0; j<max; j++)
+		for (j=max-1; j>=0; j--)
 		{
 			fprintf(output, "%.2f\t",p[i][j]);
 		}
