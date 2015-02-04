@@ -10,12 +10,13 @@
 #include <sys/time.h>
 #include "mpi.h"
 
-#define n 20                         /* number of grid points */
+#define n 1000                         /* number of grid points */
 #define TOLERANCE 0.00000001
 #define PI 3.14159265
 
 static double rms_norm(double **a);
 static double jacobi_parallel(double **p, int rank, int n_proc, int ite);
+static double analytical_norm(int iter);
 
 int main(int argc, char **argv)
 {
@@ -27,7 +28,6 @@ int main(int argc, char **argv)
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &n_proc);
 
-	//double p[n][n];
 	double **p;
 	p = ( double** )malloc( n*sizeof(double *));
 	for(i=0; i<n; i++)
@@ -43,6 +43,7 @@ int main(int argc, char **argv)
 	{
 		p[i][0] = sin(PI*i/n) * sin(PI*i/n);
 	}
+	MPI_Barrier(MPI_COMM_WORLD);
 
 	time1 = MPI_Wtime();
 
@@ -50,7 +51,6 @@ int main(int argc, char **argv)
 	double new_norm = 0.0;
 	for(ite = 1; ite < 10000; )
 	{
-		//printf("\nbefore jacobi iteration\n");
 		old_norm = jacobi_parallel(p, rank, n_proc, ite);
 		ite++;
 		new_norm = jacobi_parallel(p, rank, n_proc, ite);
@@ -60,6 +60,9 @@ int main(int argc, char **argv)
 			if(fabs(new_norm - old_norm) < TOLERANCE)
 			{
 				printf("\nConverged after %d iterations\n", ite);
+
+				double analytical = analytical_norm(ite);
+				printf("\nError: %f\n", fabs(analytical-new_norm));
 				break;
 			}
 		}
@@ -70,13 +73,6 @@ int main(int argc, char **argv)
 	if(rank == n_proc-1)
 	{
 		printf("Time spent: %gs\n\n", time2-time1);
-
-		for(i=0; i<n; i++)
-		{
-			for(j=0; j<n; j++)
-				printf("%f ", p[i][j]);
-			printf("\n");
-		}
 	}
 
 	free(p);
@@ -102,6 +98,40 @@ double rms_norm(double **a)
 	return v;
 }
 
+double analytical_norm(int iter)
+{
+	int ii, i, j, k;
+	double **a;
+	a = ( double** )malloc( n*sizeof(double *));
+	for(ii=0; ii<n; ii++)
+		a[ii] = (double *) malloc(n*sizeof(double));
+
+	double h = 1.0 / (n-1);
+	double res = 0.0;
+	long double b = 0.0;
+	long double c = 0.0;
+	for(i=0; i<n; i++)
+	{
+		for(j=0; j<n; j++)
+		{
+			double x = i*h;
+			double y = j*h;
+			for(k=1; k<=iter; k++)
+			{
+				if(k != 2)
+				{
+					b = 4*(cos(k*PI)-1)*(1/tanh(k*PI))*sin(k*PI*y)*(tanh(k*PI)*cosh(k*PI*x)-sinh(k*PI*x));
+					c = (PI*(pow(k,3)-4*k));
+
+					res += b/c;
+				}
+			}
+			a[i][j] = res;
+		}
+	}
+
+	return rms_norm(a);
+}
 
 double jacobi_parallel(double **p, int rank, int n_proc, int ite)
 {
@@ -128,62 +158,18 @@ double jacobi_parallel(double **p, int rank, int n_proc, int ite)
 
 	if(rank == 0)
 	{
-		/*sendBuf = (double *) malloc(count*sizeof(double));
-		for(j=0; j<n; j++)
-		{
-			sendBuf[j] = p[s_index][j];
-		}*/
 		MPI_Sendrecv(&p[s_index][0], count, MPI_DOUBLE, 1, downtag, &p[s_index+1][0], count, MPI_DOUBLE, 1, uptag, MPI_COMM_WORLD, &status);
-
 	}
 	else if(rank == n_proc-1)
 	{
-		/*sendBuf3 = (double *) malloc(count*sizeof(double));
-		for(j=0; j<n; j++)
-		{
-			sendBuf3[j] = p[n-s_index-1][j];
-		}*/
-		//MPI_Sendrecv(sendBuf, count, MPI_DOUBLE, rank-1, 1, rcvBuf, count, MPI_DOUBLE, rank-1, 1, MPI_COMM_WORLD, &status);
-		//MPI_Send(sendBuf3, count, MPI_DOUBLE, rank-1, uptag, MPI_COMM_WORLD);
-		//free(sendBuf3);
-		//MPI_Send(&p[n-s_index-1][0], count, MPI_DOUBLE, rank-1, uptag, MPI_COMM_WORLD);
-
-		//MPI_Recv(rcvBuf3, count, MPI_DOUBLE, rank-1, downtag, MPI_COMM_WORLD, &status);
-		//		MPI_Recv(&p[n-n_grid][0], count, MPI_DOUBLE, rank-1, downtag, MPI_COMM_WORLD, &status);
 		MPI_Sendrecv(&p[n-n_grid+1][0], count, MPI_DOUBLE, rank-1, uptag, &p[n-n_grid][0], count, MPI_DOUBLE, rank-1, downtag, MPI_COMM_WORLD, &status);
-
 	}
 	else
 	{
-		/*endBuf1 = (double *) malloc(count*sizeof(double));
-		sendBuf2 = (double *) malloc(count*sizeof(double));
-		for(j=0; j<n; j++)
-		{
-			sendBuf1[j] = p[rank*s_index+1][j];
-			//MPI_Sendrecv(sendBuf1, count, MPI_DOUBLE, rank-1, 1, rcvBuf1, count, MPI_DOUBLE, rank-1, 1, MPI_COMM_WORLD, &status);
-			//MPI_Send(sendBuf1, count, MPI_DOUBLE, rank-1, uptag, MPI_COMM_WORLD);
-			//free(sendBuf1);
-			MPI_Send(&p[rank*s_index+1][0], count, MPI_DOUBLE, rank-1, uptag, MPI_COMM_WORLD);
-*/
+		MPI_Sendrecv(&p[rank*s_index+1][0], count, MPI_DOUBLE, rank-1, uptag, &p[rank*s_index][0], count, MPI_DOUBLE, rank-1, downtag, MPI_COMM_WORLD, &status);
 
-			//MPI_Recv(rcvBuf1, count, MPI_DOUBLE, rank-1, 1, MPI_COMM_WORLD, &status);
-	//		MPI_Recv(&p[rank*s_index][0], count, MPI_DOUBLE, rank-1, downtag, MPI_COMM_WORLD, &status);
-
-			MPI_Sendrecv(&p[rank*s_index+1][0], count, MPI_DOUBLE, rank-1, uptag, &p[rank*s_index][0], count, MPI_DOUBLE, rank-1, downtag, MPI_COMM_WORLD, &status);
-
-			//sendBuf2[j] = p[rank*s_index+s_index][j];
-			//MPI_Sendrecv(sendBuf2, count, MPI_DOUBLE, rank+1, 1, rcvBuf2, count, MPI_DOUBLE, rank+1, 1, MPI_COMM_WORLD, &status);
-			//MPI_Send(sendBuf2, count, MPI_DOUBLE, rank-1, downtag, MPI_COMM_WORLD);
-			//free(sendBuf2);
-	//		MPI_Send(&p[rank*s_index+s_index][0], count, MPI_DOUBLE, rank-1, downtag, MPI_COMM_WORLD);
-
-			//MPI_Recv(rcvBuf2, count, MPI_DOUBLE, rank-1, 1, MPI_COMM_WORLD, &status);
-	//		MPI_Recv(&p[rank*s_index+s_index+1][0], count, MPI_DOUBLE, rank-1, uptag, MPI_COMM_WORLD, &status);
-			MPI_Sendrecv(&p[rank*s_index+s_index][0], count, MPI_DOUBLE, rank+1, downtag, &p[rank*s_index+s_index+1][0], count, MPI_DOUBLE, rank+1, uptag, MPI_COMM_WORLD, &status);
-
-	//	}
+		MPI_Sendrecv(&p[rank*s_index+s_index][0], count, MPI_DOUBLE, rank+1, downtag, &p[rank*s_index+s_index+1][0], count, MPI_DOUBLE, rank+1, uptag, MPI_COMM_WORLD, &status);
 	}
-
 
 	return rms_norm(p);
 }

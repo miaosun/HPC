@@ -9,10 +9,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
 #define PI 3.14159265
 
-#define max 50                         /* number of grid points */
-#define TELERANCE 0.00000001
+#define max 20                         /* number of grid points */
+#define TOLERANCE 0.00000001
+#define ITERATION 100000000
 
 double average(double p[max][max])
 {
@@ -44,10 +46,44 @@ double rms_norm (double a[max][max] )
 	return v;
 }
 
+double analytical_norm(int iter)
+{
+	double a[max][max];
+
+	double h = 1.0 / (max-1);
+	double res = 0.0;
+	long double b = 0.0;
+	long double c = 0.0;
+	for(int i=0; i<max; i++)
+	{
+		for(int j=0; j<max; j++)
+		{
+			double x = i*h;
+			double y = j*h;
+			for(int k=1; k<=iter; k++)
+			{
+				if(k != 2)
+				{
+					b = 4*(cos(k*PI)-1)*(1/tanh(k*PI))*sin(k*PI*y)*(tanh(k*PI)*cosh(k*PI*x)-sinh(k*PI*x));
+					c = (PI*(pow(k,3)-4*k));
+
+					res += b/c;
+				}
+			}
+
+			a[i][j] = res;
+		}
+	}
+
+	return rms_norm(a);
+}
+
 int main()
 {
 	double p[max][max];
 	int i, j, iter;
+	time_t time1, time2;
+	double seconds;
 
 	FILE *output;			/* save data in laplace.dat */
 	output = fopen("laplace.dat","w");
@@ -63,11 +99,15 @@ int main()
 		p[i][0] = sin(PI*i/max) * sin(PI*i/max);
 	}
 
-	double old_avg = 0.0;
-	double avg = 0.0;
-	for(iter=0; iter<10000; iter++)               /* iterations */
+	double old_norm = 0.0;
+	double norm = 0.0;
+	double analytical = 0.0;
+
+	time(&time1);
+
+	for(iter=1; iter<ITERATION; iter++)               /* iterations */
 	{
-		old_avg = avg;
+		old_norm = norm;
 		for(i=1; i<(max-1); i++)                  /* x-direction */
 		{
 			for(j=1; j<(max-1); j++)               /* y-direction */
@@ -82,19 +122,28 @@ int main()
 				printf("%.2f\t", p[i][j]);
 			printf("\n");
 		}
-		avg = rms_norm(p);
+		norm = rms_norm(p);
 
-		if(fabs(avg-old_avg) < TELERANCE)
+		if(fabs(norm-old_norm) < TOLERANCE)
 		{
 			printf("\nConverged after %d iterations\n", iter);
-			exit(0);
+
+			time(&time2);
+			seconds = difftime(time2, time1);
+			printf("Time spent: %.2f seconds\n", seconds);
+
+			analytical = analytical_norm(iter);
+			printf("\nError: %f\n", fabs(analytical-norm));
+			break;
 		}
 		printf("\n");
 	}
 
-	for (i=max-1; i>=0 ; i--)         /* write data gnuplot 3D format */
+
+
+	for (i=0; i<max ; i++)         /* write data gnuplot 3D format */
 	{
-		for (j=max-1; j>=0; j--)
+		for (j=0; j<max; j++)
 		{
 			fprintf(output, "%.2f\t",p[i][j]);
 		}
